@@ -1,98 +1,128 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
-
-const BRAIN_DIR = path.join(process.cwd(), '..', 'brain');
+const GITHUB_OWNER = 'ajaykm26'
+const GITHUB_REPO = 'brain'
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN
+const GITHUB_API = 'https://api.github.com'
 
 export interface DocMeta {
-  slug: string[];
-  title: string;
-  date: string;
-  category: string;
-  tags: string[];
-  excerpt: string;
+  slug: string[]
+  title: string
+  date?: string
+  category?: string
+  tags?: string[]
+  path: string
 }
 
 export interface Doc extends DocMeta {
-  content: string;
+  content: string
+  frontmatter: Record<string, string>
 }
 
-function getAllMarkdownFiles(dir: string): string[] {
-  const files: string[] = [];
+async function githubFetch(path: string) {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github.v3+json',
+  }
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`
+  }
+  const res = await fetch(`${GITHUB_API}${path}`, {
+    headers,
+    next: { revalidate: 60 }, // revalidate every 60 seconds
+  })
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${path}`)
+  return res.json()
+}
 
-  if (!fs.existsSync(dir)) return files;
-
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...getAllMarkdownFiles(fullPath));
-    } else if (entry.name.endsWith('.md')) {
-      files.push(fullPath);
+// Recursively get all .md files from the repo
+async function getAllFiles(dir = ''): Promise<{ path: string; download_url: string }[]> {
+  const items = await githubFetch(
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${dir}`
+  )
+  const files: { path: string; download_url: string }[] = []
+  for (const item of items) {
+    if (item.type === 'file' && item.name.endsWith('.md') && item.name !== 'README.md') {
+      files.push({ path: item.path, download_url: item.download_url })
+    } else if (item.type === 'dir') {
+      const sub = await getAllFiles(item.path)
+      files.push(...sub)
     }
   }
-  return files;
+  return files
 }
 
-function fileToSlug(filePath: string): string[] {
-  const relative = path.relative(BRAIN_DIR, filePath);
-  const withoutExt = relative.replace(/\.md$/, '');
-  return withoutExt.split(path.sep);
+function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; content: string } {
+  const frontmatter: Record<string, string> = {}
+  let content = raw
+
+  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/m)
+  if (match) {
+    const block = match[1]
+    content = match[2]
+    for (const line of block.split('\n')) {
+      const idx = line.indexOf(':')
+      if (idx === -1) continue
+      const key = line.slice(0, idx).trim()
+      const value = line
+        .slice(idx + 1)
+        .trim()
+        .replace(/^["']|["']$/g, '')
+        .replace(/^\[|\]$/g, '')
+      frontmatter[key] = value
+    }
+  }
+
+  return { frontmatter, content }
 }
 
-function extractExcerpt(content: string): string {
-  return content
-    .replace(/^---[\s\S]*?---\n/, '')
-    .replace(/#{1,6}\s+/g, '')
-    .replace(/[*_`[\]()]/g, '')
-    .replace(/\n+/g, ' ')
-    .trim()
-    .slice(0, 180);
+function pathToSlug(filePath: string): string[] {
+  return filePath.replace(/\.md$/, '').split('/')
 }
 
-export function getAllDocs(): DocMeta[] {
-  const files = getAllMarkdownFiles(BRAIN_DIR);
+function titleFromSlug(slug: string[]): string {
+  const last = slug[slug.length - 1]
+  return last
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
-  const docs = files.map((filePath) => {
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    const { data, content } = matter(raw);
-    const slug = fileToSlug(filePath);
-    const filename = path.basename(filePath, '.md');
+export async function getAllDocs(): Promise<DocMeta[]> {
+  try {
+    const files = await getAllFiles()
+    return files.map(({ path }) => {
+      const slug = pathToSlug(path)
+      return {
+        slug,
+        title: titleFromSlug(slug),
+        path,
+      }
+    })
+  } catch (e) {
+    console.error('Failed to fetch docs:', e)
+    return []
+  }
+}
 
+export async function getDoc(slug: string[]): Promise<Doc | null> {
+  const filePath = slug.join('/') + '.md'
+  try {
+    const items = await githubFetch(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`
+    )
+    const raw = Buffer.from(items.content, 'base64').toString('utf-8')
+    const { frontmatter, content } = parseFrontmatter(raw)
+
+    const slugArr = pathToSlug(filePath)
     return {
-      slug,
-      title: (data.title as string) || filename.replace(/[-_]/g, ' '),
-      date: (data.date as string) || '',
-      category: (data.category as string) || slug[0] || 'uncategorized',
-      tags: (data.tags as string[]) || [],
-      excerpt: extractExcerpt(content),
-    };
-  });
-
-  return docs.sort((a, b) => {
-    if (!a.date && !b.date) return 0;
-    if (!a.date) return 1;
-    if (!b.date) return -1;
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
-  });
-}
-
-export function getDoc(slug: string[]): Doc | null {
-  const filePath = path.join(BRAIN_DIR, ...slug) + '.md';
-
-  if (!fs.existsSync(filePath)) return null;
-
-  const raw = fs.readFileSync(filePath, 'utf-8');
-  const { data, content } = matter(raw);
-  const filename = path.basename(filePath, '.md');
-
-  return {
-    slug,
-    title: (data.title as string) || filename.replace(/[-_]/g, ' '),
-    date: (data.date as string) || '',
-    category: (data.category as string) || slug[0] || 'uncategorized',
-    tags: (data.tags as string[]) || [],
-    excerpt: extractExcerpt(content),
-    content,
-  };
+      slug: slugArr,
+      title: frontmatter.title || titleFromSlug(slugArr),
+      date: frontmatter.date,
+      category: frontmatter.category,
+      tags: frontmatter.tags ? frontmatter.tags.split(',').map((t: string) => t.trim()) : [],
+      path: filePath,
+      content,
+      frontmatter,
+    }
+  } catch (e) {
+    console.error('Failed to fetch doc:', e)
+    return null
+  }
 }

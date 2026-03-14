@@ -31,7 +31,7 @@ function formatDate(date: string) {
 }
 
 export default function DocContent({ doc }: DocContentProps) {
-  const categoryStyle = CATEGORY_COLORS[doc.category] ?? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+  const categoryStyle = (doc.category && CATEGORY_COLORS[doc.category]) || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
 
   return (
     <article className="max-w-3xl mx-auto px-8 py-10 min-h-full">
@@ -50,7 +50,7 @@ export default function DocContent({ doc }: DocContentProps) {
               {doc.category}
             </span>
           )}
-          {doc.tags.map((tag) => (
+          {(doc.tags ?? []).map((tag) => (
             <span
               key={tag}
               className="text-xs px-2 py-0.5 rounded-full bg-[#1c1c1c] text-[#555] border border-[#282828]"

@@ -40,9 +40,8 @@ export default function Sidebar({ docs }: SidebarProps) {
     return docs.filter(
       (d) =>
         d.title.toLowerCase().includes(q) ||
-        d.category.toLowerCase().includes(q) ||
-        d.tags.some((t) => t.toLowerCase().includes(q)) ||
-        d.excerpt.toLowerCase().includes(q),
+        (d.category ?? '').toLowerCase().includes(q) ||
+        (d.tags ?? []).some((t) => t.toLowerCase().includes(q)),
     );
   }, [docs, search]);
 

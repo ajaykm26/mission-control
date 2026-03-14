@@ -3,13 +3,15 @@ import './globals.css';
 import Sidebar from '@/components/Sidebar';
 import { getAllDocs } from '@/lib/docs';
 
+export const revalidate = 60;
+
 export const metadata: Metadata = {
-  title: 'Second Brain',
+  title: 'Mission Control',
   description: 'Your personal knowledge base',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const docs = getAllDocs();
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const docs = await getAllDocs();
 
   return (
     <html lang="en">

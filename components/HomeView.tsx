@@ -29,8 +29,9 @@ function formatDate(date: string) {
 function groupByCategory(docs: DocMeta[]) {
   const groups: Record<string, DocMeta[]> = {};
   for (const doc of docs) {
-    if (!groups[doc.category]) groups[doc.category] = [];
-    groups[doc.category].push(doc);
+    const key = doc.category ?? 'uncategorized';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(doc);
   }
   return groups;
 }
@@ -79,7 +80,7 @@ export default function HomeView({ docs }: HomeViewProps) {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {recent.map((doc) => {
-            const catStyle = CATEGORY_COLORS[doc.category] ?? 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
+            const catStyle = (doc.category && CATEGORY_COLORS[doc.category]) || 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20';
             return (
               <Link
                 key={doc.slug.join('/')}
@@ -94,11 +95,6 @@ export default function HomeView({ docs }: HomeViewProps) {
                     {doc.category}
                   </span>
                 </div>
-                {doc.excerpt && (
-                  <p className="text-xs text-[#4a4a4a] line-clamp-2 leading-relaxed mb-2">
-                    {doc.excerpt}
-                  </p>
-                )}
                 {doc.date && (
                   <p className="text-[10px] text-[#383838]">{formatDate(doc.date)}</p>
                 )}

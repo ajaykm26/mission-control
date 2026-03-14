@@ -1,0 +1,15 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+.npmrc
+.yarn*
+pnpm-lock.yaml
+yarn.lock
+dist
+.DS_Store
+
+# OpenClaw workspace clutter
+../.openclaw/
+../node_modules/

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import type { DocMeta } from '@/lib/docs';
 
@@ -49,7 +51,7 @@ export default function HomeView({ docs }: HomeViewProps) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-8">
         <span className="text-5xl mb-4">🧠</span>
-        <h1 className="text-xl font-semibold text-[#e0e0e0] mb-2">Second Brain</h1>
+        <h1 className="text-xl font-semibold text-[#e0e0e0] mb-2">Mission Control</h1>
         <p className="text-sm text-[#555] max-w-sm">
           No documents found. Add Markdown files to the{' '}
           <code className="text-[#777] bg-[#1c1c1c] px-1.5 py-0.5 rounded text-xs">brain/</code>{' '}
@@ -66,7 +68,7 @@ export default function HomeView({ docs }: HomeViewProps) {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <span className="text-2xl">🧠</span>
-            <h1 className="text-2xl font-bold text-[#f0f0f0] tracking-tight">Second Brain</h1>
+            <h1 className="text-2xl font-bold text-[#f0f0f0] tracking-tight">Mission Control</h1>
           </div>
           <p className="text-sm text-[#555] ml-[2.75rem]">
             {docs.length} document{docs.length !== 1 ? 's' : ''} across {orderedCategories.length} categor

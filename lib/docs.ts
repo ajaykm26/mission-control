@@ -15,6 +15,8 @@ export interface DocMeta {
 export interface Doc extends DocMeta {
   content: string
   frontmatter: Record<string, string>
+  lastCommitAuthor?: string
+  lastCommitDate?: string
 }
 
 async function githubFetch(path: string) {
@@ -64,7 +66,7 @@ function parseFrontmatter(raw: string): { frontmatter: Record<string, string>; c
       const value = line
         .slice(idx + 1)
         .trim()
-        .replace(/^["']|["']$/g, '')
+        .replace(/^[["']|[["']$/g, '')
         .replace(/^\[|\]$/g, '')
       frontmatter[key] = value
     }
@@ -82,6 +84,22 @@ function titleFromSlug(slug: string[]): string {
   return last
     .replace(/-/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+async function getLastCommit(path: string): Promise<{ author?: string; date?: string }> {
+  try {
+    const commits = await githubFetch(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/commits?path=${encodeURIComponent(path)}&per_page=1`
+    ) as any[]
+    if (!Array.isArray(commits) || commits.length === 0) return {}
+    const commit = commits[0]
+    const authorName: string | undefined = commit.commit?.author?.name
+    const date: string | undefined = commit.commit?.author?.date
+    return { author: authorName, date }
+  } catch (e) {
+    console.error('Failed to fetch last commit for', path, e)
+    return {}
+  }
 }
 
 export async function getAllDocs(): Promise<DocMeta[]> {
@@ -111,6 +129,9 @@ export async function getDoc(slug: string[]): Promise<Doc | null> {
     const { frontmatter, content } = parseFrontmatter(raw)
 
     const slugArr = pathToSlug(filePath)
+
+    const { author, date } = await getLastCommit(filePath)
+
     return {
       slug: slugArr,
       title: frontmatter.title || titleFromSlug(slugArr),
@@ -120,6 +141,8 @@ export async function getDoc(slug: string[]): Promise<Doc | null> {
       path: filePath,
       content,
       frontmatter,
+      lastCommitAuthor: author,
+      lastCommitDate: date,
     }
   } catch (e) {
     console.error('Failed to fetch doc:', e)

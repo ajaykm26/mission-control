@@ -62,15 +62,72 @@ export default function HomeView({ docs }: HomeViewProps) {
   return (
     <div className="max-w-4xl mx-auto px-8 py-10">
       {/* ── Hero ── */}
-      <div className="mb-10">
-        <div className="flex items-center gap-3 mb-1">
-          <span className="text-2xl">🧠</span>
-          <h1 className="text-2xl font-bold text-[#f0f0f0] tracking-tight">Second Brain</h1>
+      <div className="mb-10 flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-2xl">🧠</span>
+            <h1 className="text-2xl font-bold text-[#f0f0f0] tracking-tight">Second Brain</h1>
+          </div>
+          <p className="text-sm text-[#555] ml-[2.75rem]">
+            {docs.length} document{docs.length !== 1 ? 's' : ''} across {orderedCategories.length} categor
+            {orderedCategories.length !== 1 ? 'ies' : 'y'}
+          </p>
         </div>
-        <p className="text-sm text-[#555] ml-[2.75rem]">
-          {docs.length} document{docs.length !== 1 ? 's' : ''} across {orderedCategories.length} categor
-          {orderedCategories.length !== 1 ? 'ies' : 'y'}
-        </p>
+        <div className="flex flex-col gap-2 items-end">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/new-note', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ kind: 'daily' }),
+                });
+                const data = await res.json();
+                if (res.ok && data.path) {
+                  const slug = data.path.replace(/\.md$/, '');
+                  window.location.href = `/doc/${slug}`;
+                } else {
+                  console.error('Failed to create daily note', data);
+                  alert('Failed to create daily note');
+                }
+              } catch (e) {
+                console.error('Failed to create daily note', e);
+                alert('Failed to create daily note');
+              }
+            }}
+            className="inline-flex items-center gap-1 rounded-md border border-[#303030] bg-[#141414] px-3 py-1.5 text-xs font-medium text-[#ddd] hover:bg-[#1a1a1a]"
+          >
+            + New Daily Note
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const title = window.prompt('Title for research note (optional):') || undefined;
+                const res = await fetch('/api/new-note', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ kind: 'research', title }),
+                });
+                const data = await res.json();
+                if (res.ok && data.path) {
+                  const slug = data.path.replace(/\.md$/, '');
+                  window.location.href = `/doc/${slug}`;
+                } else {
+                  console.error('Failed to create research note', data);
+                  alert('Failed to create research note');
+                }
+              } catch (e) {
+                console.error('Failed to create research note', e);
+                alert('Failed to create research note');
+              }
+            }}
+            className="inline-flex items-center gap-1 rounded-md border border-[#303030] bg-[#141414] px-3 py-1.5 text-xs font-medium text-[#aaa] hover:bg-[#1a1a1a]"
+          >
+            + New Research Note
+          </button>
+        </div>
       </div>
 
       {/* ── Recent ── */}

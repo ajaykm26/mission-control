@@ -74,11 +74,23 @@ export default function Sidebar({ docs }: SidebarProps) {
       <div className="px-3 pt-4 pb-3 border-b border-[#1e1e1e]">
         <Link
           href="/"
-          className="flex items-center gap-2 mb-3 hover:opacity-75 transition-opacity"
+          className="flex items-center gap-2 mb-2 hover:opacity-75 transition-opacity"
         >
           <span className="text-lg leading-none">🧠</span>
           <span className="font-semibold text-[#e0e0e0] text-sm tracking-tight">Second Brain</span>
         </Link>
+        <div className="flex items-center gap-2 mb-3 text-[11px] text-[#666]">
+          <Link
+            href="/projects"
+            className={`px-2 py-1 rounded-md border text-[11px] transition-colors ${
+              pathname === '/projects'
+                ? 'border-[#6d4fc4] bg-[#1d1d1d] text-[#e0e0e0]'
+                : 'border-[#2a2a2a] bg-[#1a1a1a] text-[#aaa] hover:border-[#3a3a3a] hover:text-[#e0e0e0]'
+            }`}
+          >
+            Projects
+          </Link>
+        </div>
         <div className="relative">
           <svg
             className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[#444]"

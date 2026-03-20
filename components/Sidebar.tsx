@@ -77,7 +77,7 @@ export default function Sidebar({ docs }: SidebarProps) {
           className="flex items-center gap-2 mb-2 hover:opacity-75 transition-opacity"
         >
           <span className="text-lg leading-none">🧠</span>
-          <span className="font-semibold text-[#e0e0e0] text-sm tracking-tight">Second Brain</span>
+          <span className="font-semibold text-[#e0e0e0] text-sm tracking-tight">Mission Control</span>
         </Link>
         <div className="flex items-center gap-2 mb-3 text-[11px] text-[#666]">
           <Link

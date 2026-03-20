@@ -61,9 +61,10 @@ export default function ProjectsPage() {
       ) : (
         <div className="space-y-4">
           {projects.map((project) => (
-            <div
+            <a
+              href={`/projects/${project.slug}`}
               key={project.slug}
-              className="rounded border border-gray-200 bg-white/40 p-4 shadow-sm"
+              className="block rounded border border-gray-200 bg-white/40 p-4 shadow-sm transition hover:border-blue-300 hover:bg-white"
             >
               <h2 className="text-xl font-semibold">{project.title}</h2>
               {project.status && (
@@ -76,7 +77,7 @@ export default function ProjectsPage() {
                   {project.description}
                 </p>
               )}
-            </div>
+            </a>
           ))}
         </div>
       )}

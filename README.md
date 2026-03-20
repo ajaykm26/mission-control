@@ -1,4 +1,4 @@
-# Second Brain
+# Mission Control
 
 A beautiful Markdown document viewer built with Next.js 14, styled like a mix of Obsidian and Linear. Dark theme, minimal, fast.
 

@@ -32,7 +32,7 @@ async function githubFetch(pathname: string) {
   return res.json();
 }
 
-async function getProjects(): Promise<Project[]> {
+async function getProjects(): Promise<{ projects: Project[]; error?: string }> {
   // List files in brain/projects via GitHub contents API
   try {
     const items = (await githubFetch(
@@ -63,23 +63,33 @@ async function getProjects(): Promise<Project[]> {
 
     projects.sort((a, b) => a.title.localeCompare(b.title));
 
-    return projects;
+    return { projects };
   } catch (e) {
     console.error("Failed to load projects from GitHub", e);
-    return [];
+    return {
+      projects: [],
+      error:
+        "Could not load projects from GitHub. Check brain/projects/* and GITHUB_TOKEN.",
+    };
   }
 }
 
 export default async function ProjectsPage() {
-  const projects = await getProjects();
+  const { projects, error } = await getProjects();
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
       <h1 className="mb-4 text-3xl font-bold">Projects</h1>
-      <p className="mb-8 text-sm text-gray-500">
+      <p className="mb-2 text-sm text-gray-500">
         High-level view of active projects pulled from{" "}
         <code>brain/projects</code>.
       </p>
+
+      {error && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
 
       {projects.length === 0 ? (
         <p className="text-gray-500">

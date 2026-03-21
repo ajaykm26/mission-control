@@ -1,29 +1,50 @@
-import fs from 'fs';
-import path from 'path';
 import matter from 'gray-matter';
 import ReactMarkdown from 'react-markdown';
 
-export const revalidate = 30;
+export const revalidate = 60;
 
-function loadTaskBoardMarkdown(): string {
+const GITHUB_OWNER = 'ajaykm26';
+const GITHUB_REPO = 'brain';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_API = 'https://api.github.com';
+
+async function fetchBrainFile(relPath: string): Promise<string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github.v3+json',
+  };
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  }
+
+  const res = await fetch(
+    `${GITHUB_API}/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${relPath}`,
+    {
+      headers,
+      next: { revalidate: 60 },
+    },
+  );
+
+  if (!res.ok) {
+    throw new Error(`GitHub fetch failed for ${relPath}: ${res.status}`);
+  }
+
+  const data = (await res.json()) as { content: string };
+  const raw = Buffer.from(data.content, 'base64').toString('utf-8');
+  const { content } = matter(raw);
+  return content;
+}
+
+async function loadTaskBoardMarkdown(): Promise<string> {
   try {
-    const taskBoardPath = path.resolve(
-      process.cwd(),
-      '..',
-      'brain',
-      'projects',
-      'task-board.md',
-    );
-    const raw = fs.readFileSync(taskBoardPath, 'utf8');
-    const { content } = matter(raw);
+    const content = await fetchBrainFile('projects/task-board.md');
     return content || '# Mission Control Task Board\n\nNo tasks found yet.';
   } catch {
     return '# Mission Control Task Board\n\nNo task board file found yet.';
   }
 }
 
-export default function TasksPage() {
-  const content = loadTaskBoardMarkdown();
+export default async function TasksPage() {
+  const content = await loadTaskBoardMarkdown();
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">

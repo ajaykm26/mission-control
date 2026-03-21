@@ -58,10 +58,87 @@ function loadDailyFiles(root: string, source: 'nightly' | 'memory' | 'report'): 
   return days;
 }
 
-export function getRecentActivity(limit = 10): ActivityDay[] {
-  const nightly = loadDailyFiles('nightly', 'nightly');
-  const memory = loadDailyFiles('memory', 'memory');
-  const reports = loadDailyFiles('reports', 'report');
+// --- GitHub-backed memory loader ---
+
+const GITHUB_OWNER = 'ajaykm26';
+const GITHUB_REPO = 'brain';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_API = 'https://api.github.com';
+
+async function githubFetch(pathname: string) {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github.v3+json',
+  };
+  if (GITHUB_TOKEN) {
+    headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+  }
+  const res = await fetch(`${GITHUB_API}${pathname}`, {
+    headers,
+    // Memory/activity can be slightly stale; revalidate periodically.
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${pathname}`);
+  return res.json();
+}
+
+async function loadGithubDailyFiles(
+  dir: string,
+  source: 'nightly' | 'memory' | 'report'
+): Promise<ActivityDay[]> {
+  try {
+    const items = await githubFetch(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${dir}`
+    );
+
+    const files = (items as any[]).filter(
+      (item) => item.type === 'file' && item.name.endsWith('.md')
+    );
+
+    const days: ActivityDay[] = [];
+
+    for (const file of files) {
+      const rawRes = await fetch(file.download_url);
+      const raw = await rawRes.text();
+      const { data, content } = matter(raw);
+
+      const date = (data.date as string) || file.name.replace(/\.mdx?$/, '');
+      const defaultTitlePrefix =
+        source === 'nightly' ? 'Nightly' : source === 'memory' ? 'Memory' : 'Report';
+      const title = (data.title as string) || `${defaultTitlePrefix} — ${date}`;
+
+      const lines = content.split(/\r?\n/).map((l) => l.trim());
+      const firstParagraphLines: string[] = [];
+      for (const line of lines) {
+        if (!line) {
+          if (firstParagraphLines.length > 0) break;
+          continue;
+        }
+        if (line.startsWith('#')) continue;
+        firstParagraphLines.push(line);
+      }
+      const summary = firstParagraphLines.join(' ');
+
+      days.push({
+        date,
+        source,
+        title,
+        summary,
+        filePath: file.path,
+      });
+    }
+
+    return days;
+  } catch (e) {
+    console.error('Failed to load GitHub-backed activity files', dir, e);
+    return [];
+  }
+}
+
+export async function getRecentActivity(limit = 10): Promise<ActivityDay[]> {
+  // All sources now come from the GitHub-backed brain repo mirrors
+  const nightly = await loadGithubDailyFiles('nightly', 'nightly');
+  const memory = await loadGithubDailyFiles('agent-memory', 'memory');
+  const reports = await loadGithubDailyFiles('reports', 'report');
 
   const all = [...nightly, ...memory, ...reports];
 

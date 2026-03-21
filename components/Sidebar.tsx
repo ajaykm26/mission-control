@@ -90,6 +90,16 @@ export default function Sidebar({ docs }: SidebarProps) {
           >
             Projects
           </Link>
+          <Link
+            href="/calendar"
+            className={`px-2 py-1 rounded-md border text-[11px] transition-colors ${
+              pathname === '/calendar'
+                ? 'border-[#6d4fc4] bg-[#1d1d1d] text-[#e0e0e0]'
+                : 'border-[#2a2a2a] bg-[#1a1a1a] text-[#aaa] hover:border-[#3a3a3a] hover:text-[#e0e0e0]'
+            }`}
+          >
+            Calendar
+          </Link>
         </div>
         <div className="relative">
           <svg

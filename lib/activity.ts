@@ -135,12 +135,10 @@ async function loadGithubDailyFiles(
 }
 
 export async function getRecentActivity(limit = 10): Promise<ActivityDay[]> {
-  // Nightly + reports still read from local filesystem (workspace checkout)
-  const nightly = loadDailyFiles('nightly', 'nightly');
-  const reports = loadDailyFiles('reports', 'report');
-
-  // Memory comes from the GitHub brain repo mirror at brain/agent-memory
+  // All sources now come from the GitHub-backed brain repo mirrors
+  const nightly = await loadGithubDailyFiles('nightly', 'nightly');
   const memory = await loadGithubDailyFiles('agent-memory', 'memory');
+  const reports = await loadGithubDailyFiles('reports', 'report');
 
   const all = [...nightly, ...memory, ...reports];
 

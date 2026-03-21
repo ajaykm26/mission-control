@@ -28,15 +28,28 @@ export default async function ActivityPage() {
               className="rounded border border-gray-200 bg-white/40 p-4 shadow-sm"
             >
               <header className="mb-2 flex items-baseline justify-between gap-2">
-                <h2 className="text-lg font-semibold">{day.title}</h2>
-                <span className="text-xs uppercase tracking-wide text-gray-500">
-                  {day.date} ·{' '}
-                  {day.source === 'nightly'
-                    ? 'Nightly summary'
-                    : day.source === 'memory'
-                    ? 'Memory log'
-                    : 'Report'}
-                </span>
+                <div>
+                  <h2 className="text-lg font-semibold">{day.title}</h2>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
+                    <span>{day.date}</span>
+                    <span
+                      className={
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide ' +
+                        (day.source === 'nightly'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                          : day.source === 'memory'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                          : 'bg-purple-50 text-purple-700 border border-purple-100')
+                      }
+                    >
+                      {day.source === 'nightly'
+                        ? 'Nightly'
+                        : day.source === 'memory'
+                        ? 'Memory'
+                        : 'Report'}
+                    </span>
+                  </div>
+                </div>
               </header>
               {day.summary && (
                 <p className="text-sm text-gray-700 line-clamp-3">{day.summary}</p>

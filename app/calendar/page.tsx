@@ -34,17 +34,24 @@ async function fetchBrainFile(relPath: string): Promise<string> {
   return content;
 }
 
-async function loadCalendarMarkdown(): Promise<string> {
+async function loadCalendarMarkdown(): Promise<{ content: string; error?: string }> {
   try {
     const content = await fetchBrainFile('projects/calendar.md');
-    return content || '# Mission Control Calendar\n\nNo entries yet.';
-  } catch {
-    return '# Mission Control Calendar\n\nNo calendar file found yet.';
+    return {
+      content: content || '# Mission Control Calendar\n\nNo entries yet.',
+    };
+  } catch (e) {
+    console.error('Failed to load calendar from GitHub', e);
+    return {
+      content: '# Mission Control Calendar\n\nNo calendar file found yet.',
+      error:
+        'Could not load calendar from GitHub. Check brain/projects/calendar.md and GITHUB_TOKEN.',
+    };
   }
 }
 
 export default async function CalendarPage() {
-  const content = await loadCalendarMarkdown();
+  const { content, error } = await loadCalendarMarkdown();
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8">
@@ -54,6 +61,11 @@ export default async function CalendarPage() {
         <code className="mx-1">brain/projects/calendar.md</code>. Whenever new cron jobs or
         scheduled tasks are created, they should be recorded there so this calendar stays in sync.
       </p>
+      {error && (
+        <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
       <section className="prose max-w-none prose-sm">
         <ReactMarkdown>{content}</ReactMarkdown>
       </section>
